@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#211c2b">
+  <title>Круговорот — Город Шаманов</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { --gold:#e7bd73; --cream:#f3e8d5; --muted:#c8b9ac; }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; min-height:100svh; color:var(--cream);
+      font-family: Georgia, "Times New Roman", serif;
+      background:#211c2b url("assets/city-bg.webp") center center / cover fixed no-repeat;
+      overflow-x:hidden;
+    }
+    body::before {
+      content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:linear-gradient(180deg,rgba(18,15,25,.38),rgba(22,18,29,.50) 48%,rgba(18,15,24,.78));
+    }
+    .app { position:relative; z-index:1; width:min(100%,520px); min-height:100svh; margin:auto;
+      padding:22px 18px 26px; display:flex; flex-direction:column; align-items:center; }
+    .eyebrow { font:11px/1.4 system-ui,sans-serif; letter-spacing:.24em; color:#d5c3ae; opacity:.9; margin-top:4px; }
+    h1 { font-size:clamp(30px,8vw,42px); letter-spacing:.12em; font-weight:500; margin:7px 0 3px; text-shadow:0 2px 18px #120e18; }
+    .subtitle { font:13px system-ui,sans-serif; color:#e0d2c2; opacity:.9; text-align:center; }
+    .counter { margin-top:19px; border:1px solid rgba(231,189,115,.48); background:rgba(25,20,31,.42);
+      border-radius:30px; padding:8px 15px; font:12px system-ui,sans-serif; color:#f0dfc7; backdrop-filter:blur(8px); }
+    .scene { position:relative; width:100%; flex:1; min-height:390px; display:flex; align-items:center; justify-content:center; }
+    .imp-button { position:relative; width:min(92%,390px); border:0; padding:0; margin-top:6px; background:transparent; cursor:pointer;
+      -webkit-tap-highlight-color:transparent; filter:drop-shadow(0 12px 18px rgba(0,0,0,.42)); transition:transform .16s ease; }
+    .imp-button:active { transform:scale(.965); }
+    .imp-button img { display:block; width:100%; height:auto; object-fit:contain; }
+    .tap-hint { position:absolute; bottom:8px; left:0; right:0; text-align:center; font:12px system-ui,sans-serif; color:#f3e4d0; text-shadow:0 2px 8px #100c15; }
+    .bottom { width:100%; display:grid; gap:10px; }
+    .treasures { display:flex; justify-content:center; flex-wrap:wrap; gap:7px; }
+    .treasure-chip { border:1px solid rgba(231,189,115,.38); background:rgba(25,20,31,.56); border-radius:22px;
+      padding:7px 10px; font:12px system-ui,sans-serif; color:#f4e6d2; backdrop-filter:blur(8px); }
+    .secondary { width:100%; border:1px solid rgba(231,189,115,.62); border-radius:15px; padding:13px;
+      color:#f4dfbd; background:rgba(35,27,39,.62); font:14px system-ui,sans-serif; }
+    .secondary:active { background:rgba(80,59,67,.8); }
+    .note { text-align:center; color:#d9cbbd; opacity:.8; font:11px/1.4 system-ui,sans-serif; }
+    .overlay { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; padding:22px;
+      background:rgba(12,9,17,.72); backdrop-filter:blur(7px); }
+    .overlay.show { display:flex; }
+    .card { width:min(100%,360px); text-align:center; padding:26px 22px 22px; border:1px solid rgba(231,189,115,.65);
+      border-radius:24px; background:linear-gradient(145deg,rgba(55,42,57,.97),rgba(27,23,34,.98)); box-shadow:0 18px 55px #09070d; }
+    .prize-icon { font-size:66px; line-height:1.2; margin:2px 0 12px; }
+    .card h2 { font-size:25px; font-weight:500; margin:0 0 8px; color:#f1d19a; }
+    .card p { font:14px/1.5 system-ui,sans-serif; color:#e1d4c7; margin:0 0 20px; }
+    .primary { border:0; border-radius:14px; width:100%; padding:14px; color:#2a1d20; background:linear-gradient(120deg,#f0d39c,#c99452);
+      font:600 14px system-ui,sans-serif; }
+    .empty h2 { color:#f1d19a; }
+    .collection-row { display:flex; justify-content:space-between; gap:15px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.1); font:14px system-ui,sans-serif; }
+    .collection-row:last-child { border:0; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="eyebrow">ГОРОД ШАМАНОВ · ЛОКАЦИЯ</div>
+    <h1>КРУГОВОРОТ</h1>
+    <div class="subtitle">Здесь всё движется. Лови своё изобилие.</div>
+    <div class="counter" id="counter">Бесплатные прикосновения: 10 из 10</div>
+
+    <section class="scene">
+      <button class="imp-button" id="tapImp" aria-label="Нажми на Шаманского Беса">
+        <img src="assets/shaman-bes.webp" alt="Шаманский Бес протягивает золотую монетку">
+      </button>
+      <div class="tap-hint" id="hint">Нажми на Беса — он приготовил сюрприз</div>
+    </section>
+
+    <section class="bottom">
+      <div class="treasures" id="miniCollection">
+        <span class="treasure-chip">🪙 0</span><span class="treasure-chip">⭐ 0</span>
+        <span class="treasure-chip">🗝️ 0</span><span class="treasure-chip">🦋 0</span><span class="treasure-chip">🍀 0</span>
+      </div>
+      <button class="secondary" id="collectionBtn">МОИ СОКРОВИЩА</button>
+      <button class="secondary" id="abundanceBtn">СЕГОДНЯ СОЗДАДИМ ИЗОБИЛИЕ? ✨</button>
+      <div class="note">Игровые сокровища — символы. Донат добровольный и не обещает денежного возврата.</div>
+    </section>
+  </main>
+
+  <div class="overlay" id="prizeOverlay">
+    <div class="card">
+      <div class="prize-icon" id="prizeIcon">🪙</div>
+      <h2 id="prizeTitle">Монетка!</h2>
+      <p id="prizeText">Деньги любят движение.</p>
+      <button class="primary" id="closePrize">ЗАБИРАЮ ✨</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="collectionOverlay">
+    <div class="card">
+      <h2>Твои сокровища</h2>
+      <p>Каждая находка — маленький знак внимания к возможностям вокруг.</p>
+      <div id="collectionList"></div>
+      <button class="primary" id="closeCollection" style="margin-top:18px">ЗАКРЫТЬ</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="emptyOverlay">
+    <div class="card empty">
+      <div class="prize-icon">🌙</div>
+      <h2>На сегодня достаточно!</h2>
+      <p id="dailyPhrase">Иногда изобилие начинается с умения замечать то, что уже есть.</p>
+      <button class="primary" id="closeEmpty">ВЕРНУСЬ ЗАВТРА</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+  const today = () => new Date().toLocaleDateString('en-CA');
+  const storageKey = 'krugovorot-v1';
+  const items = [
+    {id:'coin', icon:'🪙', name:'Золотая монетка', text:'Пусть деньги будут не источником тревоги, а инструментом жизни.', weight:65},
+    {id:'star', icon:'⭐', name:'Звёздочка', text:'Замечай возможности — иногда они совсем рядом.', weight:20},
+    {id:'key', icon:'🗝️', name:'Золотой ключ', text:'Новая дверь может открыться неожиданно.', weight:8},
+    {id:'butterfly', icon:'🦋', name:'Золотая бабочка', text:'Перемены тоже могут быть добрыми.', weight:5},
+    {id:'clover', icon:'🍀', name:'Клевер изобилия', text:'Пусть сегодня найдётся место приятным совпадениям.', weight:2}
+  ];
+  const phrases = [
+    'Не всё ценное можно посчитать.',
+    'Иногда изобилие начинается с разрешения себе получать.',
+    'Замечай хорошее — оно не всегда приходит громко.',
+    'Ты можешь делиться, не забывая о себе.',
+    'Не нужно контролировать каждый поворот жизни.'
+  ];
+  let state;
+  try { state = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e) {}
+  if (!state || state.date !== today()) state = {date:today(), left:10, collection:{coin:0,star:0,key:0,butterfly:0,clover:0}};
+  const save = () => localStorage.setItem(storageKey, JSON.stringify(state));
+  const el = id => document.getElementById(id);
+  const vibrate = () => { try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium'); else if (navigator.vibrate) navigator.vibrate(35); } catch(e) {} };
+  function update() {
+    el('counter').textContent = `Бесплатные прикосновения: ${state.left} из 10`;
+    el('miniCollection').innerHTML = items.map(i => `<span class="treasure-chip">${i.icon} ${state.collection[i.id] || 0}</span>`).join('');
+    save();
+  }
+  function choose() {
+    const total = items.reduce((s,i)=>s+i.weight,0);
+    let n = Math.random()*total;
+    return items.find(i => (n -= i.weight) < 0) || items[0];
+  }
+  function show(id) { el(id).classList.add('show'); }
+  function hide(id) { el(id).classList.remove('show'); }
+  el('tapImp').addEventListener('click', () => {
+    if (state.left <= 0) { el('dailyPhrase').textContent = phrases[Math.floor(Math.random()*phrases.length)]; show('emptyOverlay'); return; }
+    state.left--;
+    const prize = choose();
+    state.collection[prize.id] = (state.collection[prize.id] || 0) + 1;
+    vibrate(); update();
+    el('prizeIcon').textContent = prize.icon;
+    el('prizeTitle').textContent = `Тебе выпало: ${prize.name}!`;
+    el('prizeText').textContent = prize.text;
+    show('prizeOverlay');
+    if (state.left === 0) el('hint').textContent = 'На сегодня прикосновения закончились — загляни завтра';
+  });
+  el('closePrize').onclick = () => hide('prizeOverlay');
+  el('closeEmpty').onclick = () => hide('emptyOverlay');
+  el('collectionBtn').onclick = () => {
+    el('collectionList').innerHTML = items.map(i => `<div class="collection-row"><span>${i.icon} ${i.name}</span><b>${state.collection[i.id] || 0}</b></div>`).join('');
+    show('collectionOverlay');
+  };
+  el('closeCollection').onclick = () => hide('collectionOverlay');
+  el('abundanceBtn').onclick = () => {
+    el('prizeIcon').textContent = '✨';
+    el('prizeTitle').textContent = 'Создадим изобилие?';
+    el('prizeText').textContent = 'Здесь позже появится возможность сделать добровольный вклад в проект. Делись только той суммой, с которой тебе комфортно расстаться.';
+    show('prizeOverlay');
+  };
+  update();
+})();
+</script>
+</body>
+</html>
